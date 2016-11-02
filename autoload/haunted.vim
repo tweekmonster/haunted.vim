@@ -137,6 +137,7 @@ function! s:parse_demo_file(filename) abort
       endif
     else
       let line = substitute(line, '\\<\([^>]\+\)>', '\=eval(''"\<''.submatch(1).''>"'')', 'g')
+      let line = substitute(line, '\\\\\(.\)', '\=eval(''"\''.submatch(1).''"'')', 'g')
       let line = substitute(line, '\\\(.\)', '\1', 'g')
       call add(demo_seq, line)
     endif
