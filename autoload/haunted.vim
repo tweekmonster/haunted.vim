@@ -22,6 +22,17 @@ let s:demo_boilerplate = {'i': 0, 'seq_i': 0, 'seq': [], 'config': {}}
 let s:demo = {}
 
 
+" Stolen from: https://git.io/vXZBO
+function! s:randnum(max) abort
+  return str2nr(matchstr(reltimestr(reltime()), '\v\.@<=\d+')[1:]) % a:max
+endfunction
+
+
+function! s:randrange(lower, upper) abort
+  return s:randnum(a:upper - a:lower + 1) + a:lower
+endfunction
+
+
 " Function called to advance the demo.
 function! s:demo_tick(...) abort
   if empty(s:demo) || s:demo.seq_i < 0 || s:demo.seq_i >= len(s:demo.seq)
@@ -49,10 +60,18 @@ function! s:demo_tick(...) abort
     endif
   endif
 
-  let delay = get(s:demo.config, 'key_delay', 80)
+  let delay = 80
+
   if has_key(s:demo.config, 'pause')
     let delay = s:demo.config.pause
     call remove(s:demo.config, 'pause')
+  elseif has_key(s:demo.config, 'key_delay')
+    let kd = s:demo.config.key_delay
+    if type(kd) == type([]) && len(kd) > 1
+      let delay = s:randrange(kd[0], kd[1])
+    elseif type(kd) == type(0)
+      let delay = kd
+    endif
   endif
 
   if !delay
@@ -80,12 +99,14 @@ function! s:parse_config_line(line) abort
   endif
 
   let args = matchstr(a:line, '\s\+\zs.*')
-  if name == 'pause'
+  " Explicitly match the names so that unknown configs are effectively
+  " comments.
+  if name ==# 'pause'
     let config['pause'] = empty(args) ? 1000 : str2nr(args)
-  elseif name == 'execute' && !empty(args)
+  elseif name ==# 'execute' && !empty(args)
     let config['execute'] = args
-  elseif !empty(args)
-    let config[name] = str2nr(args)
+  elseif name ==# 'key_delay'
+    let config[name] = map(split(args), 'str2nr(v:val)')
   endif
 
   return config
