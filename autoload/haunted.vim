@@ -42,7 +42,10 @@ function! s:demo_tick(...) abort
 
   let cur = s:demo.seq[s:demo.seq_i]
   if type(cur) == type({})
-    call extend(s:demo.config, cur)
+    for [k, v] in items(cur)
+      let s:demo.config[k] = v
+    endfor
+    " call extend(s:demo.config, cur)
     let s:demo.seq_i += 1
     let s:demo.i = 0
 
@@ -51,12 +54,19 @@ function! s:demo_tick(...) abort
       call remove(s:demo.config, 'execute')
     endif
   else
-    let key = s:demo.seq[s:demo.seq_i][s:demo.i]
-    silent! call feedkeys(key, 't')
-    let s:demo.i += 1
-    if s:demo.i >= len(s:demo.seq[s:demo.seq_i])
+    if has_key(s:demo.config, 'feed_full')
+      call feedkeys(s:demo.seq[s:demo.seq_i], 't')
       let s:demo.i = 0
       let s:demo.seq_i += 1
+      call remove(s:demo.config, 'feed_full')
+    else
+      let key = s:demo.seq[s:demo.seq_i][s:demo.i]
+      call feedkeys(key, 't')
+      let s:demo.i += 1
+      if s:demo.i >= len(s:demo.seq[s:demo.seq_i])
+        let s:demo.i = 0
+        let s:demo.seq_i += 1
+      endif
     endif
   endif
 
@@ -67,8 +77,12 @@ function! s:demo_tick(...) abort
     call remove(s:demo.config, 'pause')
   elseif has_key(s:demo.config, 'key_delay')
     let kd = s:demo.config.key_delay
-    if type(kd) == type([]) && len(kd) > 1
-      let delay = s:randrange(kd[0], kd[1])
+    if type(kd) == type([])
+      if len(kd) > 1
+        let delay = s:randrange(kd[0], kd[1])
+      else
+        let delay = kd[0]
+      endif
     elseif type(kd) == type(0)
       let delay = kd
     endif
@@ -106,7 +120,10 @@ function! s:parse_config_line(line) abort
   elseif name ==# 'execute' && !empty(args)
     let config['execute'] = args
   elseif name ==# 'key_delay'
-    let config[name] = map(split(args), 'str2nr(v:val)')
+    let delay = map(split(args), 'str2nr(v:val)')
+    let config[name] = len(delay) == 1 ? delay[0] : delay
+  elseif name ==# 'feed_full'
+    let config[name] = 1
   endif
 
   return config
@@ -123,6 +140,7 @@ function! s:parse_demo_file(filename) abort
   endif
 
   let lines = readfile(a:filename)
+  let prepend_next = ''
   let demo_seq = []
 
   for line in lines
@@ -130,16 +148,45 @@ function! s:parse_demo_file(filename) abort
       continue
     endif
 
-    if line =~# '^## '
+    if line =~# '^##'
       let c = s:parse_config_line(line[3:])
       if !empty(c)
         call add(demo_seq, c)
       endif
     else
-      let line = substitute(line, '\\<\([^>]\+\)>', '\=eval(''"\<''.submatch(1).''>"'')', 'g')
-      let line = substitute(line, '\\\\\(.\)', '\=eval(''"\''.submatch(1).''"'')', 'g')
-      let line = substitute(line, '\\\(.\)', '\1', 'g')
-      call add(demo_seq, line)
+      " Separate special key notation (e.g. \<cr>).  Special keys are treated
+      " differently since some can expand into more than one character.
+      let parts = split(line, '\\<[^>]\+>\zs')
+      for p in parts
+        if !empty(prepend_next)
+          let p = prepend_next.p
+          let prepend_next = ''
+        endif
+
+        let key = matchstr(p, '\\<[^>]\+>$')
+        if !empty(key)
+          let p = p[:-len(key)-1]
+          let key = key[2:-2]
+          if key =~? 'leader'
+            " Leader key needs to be prepended to the next key.
+            let prepend_next = get(g:, 'map'.tolower(key), '\')
+            let key = ''
+          else
+            let key = eval('"\<'.key.'>"')
+          endif
+        endif
+
+        if !empty(p)
+          let p = substitute(p, '\\\\\(.\)', '\=eval(''"\''.submatch(1).''"'')', 'g')
+          let p = substitute(p, '\\\(.\)', '\1', 'g')
+          call add(demo_seq, p)
+        endif
+
+        if !empty(key)
+          call add(demo_seq, {'feed_full': 1})
+          call add(demo_seq, key)
+        endif
+      endfor
     endif
   endfor
 
