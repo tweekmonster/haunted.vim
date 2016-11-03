@@ -10,11 +10,11 @@ let s:default_config = {
 
 let s:demo_pre = [
       \ copy(s:default_config),
-      \ {'execute': 'echomsg "Demo starting in 3"'},
+      \ {'execute': 'echo "Demo starting in 3"'},
       \ {'pause': 1000},
-      \ {'execute': 'echomsg "Demo starting in 2"'},
+      \ {'execute': 'echo "Demo starting in 2"'},
       \ {'pause': 1000},
-      \ {'execute': 'echomsg "Demo starting in 1"'},
+      \ {'execute': 'echo "Demo starting in 1"'},
       \ {'pause': 1000},
       \ ]
 
