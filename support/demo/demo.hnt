@@ -1,0 +1,83 @@
+### Directives are lines that start with: ##
+### Comment lines start with: ###
+## key_delay 80
+
+### Blank lines are ignored. You must use \<cr> to insert an carriage return.
+:tabedit %\<cr>
+
+### show_keys displays the keystrokes in a special buffer.  The argument is the
+### amount of idle time (in milliseconds) before the character buffer is
+### cleared.
+## show_keys 500
+:edit support/demo/demo.vim\<cr>
+
+## pause
+
+:source %\<cr>
+
+## pause
+
+Go\<right>
+
+## pause
+
+### Set to a high show_keys idle time because the popup menu causes timer
+### delays.
+## show_keys 1000
+## key_delay 250
+\<c-n>\<c-n>\<c-n>\<c-y>
+
+### Be careful with a zero key_delay. It skips using a timer.
+## key_delay 0
+## pause
+
+\<esc>
+
+### You can pause longer to let what just happened sink in for the viewer.
+## pause 2000
+
+### Setting show_keys to 0 will hide the key window.
+## show_keys 0
+
+### Two arguments for key_delay causes a random jitter between keys.  You know,
+### so you can simulate the inferior human's typing skills.
+## key_delay 80 300
+
+### If whitespace is auto-trimmed, you can use \<space> at the end of lines.
+A\<cr>Random key delay\<space>
+
+### I use 'jk' as my escape key and this causes a problem when feeding keys
+### individually. feed_full uses the entire next line for feedkeys() instead of
+### one character at a time.  Note that the blank line doesn't count for
+### feed_full.
+## show_keys
+## feed_full
+
+ji
+
+tter
+
+## pause
+## key_delay 50
+...or not\<esc>
+
+## pause 500
+
+^
+
+## pause 500
+
+### haunted.vim doesn't keep track of the current mode. Operators should be
+### preceded with feed_full to prevent the TUI from waiting for a motion.
+## feed_full
+
+dt.
+
+### 'pause' without arguments defaults to 1000ms.
+## pause
+
+## show_keys 0
+## key_delay 50
+
+:e!\<cr>
+:q!\<cr>
