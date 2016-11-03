@@ -18,7 +18,6 @@ let s:demo_pre = [
       \ {'pause': 1000},
       \ ]
 
-let s:demo_boilerplate = {'i': 0, 'seq_i': 0, 'seq': [], 'config': {}}
 let s:demo = {}
 
 
@@ -37,15 +36,18 @@ endfunction
 function! s:demo_tick(...) abort
   if empty(s:demo) || s:demo.seq_i < 0 || s:demo.seq_i >= len(s:demo.seq)
     let s:demo = {}
+    call haunted#screenkey#hide()
     return
   endif
 
+  let show_keys = get(s:demo.config, 'show_keys', 0)
   let cur = s:demo.seq[s:demo.seq_i]
+
   if type(cur) == type({})
     for [k, v] in items(cur)
       let s:demo.config[k] = v
     endfor
-    " call extend(s:demo.config, cur)
+
     let s:demo.seq_i += 1
     let s:demo.i = 0
 
@@ -53,13 +55,47 @@ function! s:demo_tick(...) abort
       execute s:demo.config.execute
       call remove(s:demo.config, 'execute')
     endif
+
+    if get(s:demo.config, 'keys_visible', 0) && !show_keys
+      call haunted#screenkey#hide()
+    endif
+    let s:demo.config.keys_visible = show_keys
+
+    if !has_key(s:demo.config, 'pause')
+      return s:demo_tick()
+    endif
   else
     if has_key(s:demo.config, 'feed_full')
-      call feedkeys(s:demo.seq[s:demo.seq_i], 't')
-      let s:demo.i = 0
-      let s:demo.seq_i += 1
-      call remove(s:demo.config, 'feed_full')
+      if show_keys
+        if has_key(s:demo.config, 'sp_key')
+          call remove(s:demo.config, 'sp_key')
+          call haunted#screenkey#show(s:demo.seq[s:demo.seq_i], show_keys)
+        else
+          " feed_full feeds the whole sequence at once. With show_keys enabled,
+          " we're faking key presses before actually calling feedkeys()
+          if !has_key(s:demo.config, 'feed_show')
+            let s:demo.config.feed_show = 1
+          endif
+
+          if s:demo.i < len(s:demo.seq[s:demo.seq_i])
+            call haunted#screenkey#show(s:demo.seq[s:demo.seq_i][s:demo.i], show_keys)
+            let s:demo.i += 1
+          else
+            call remove(s:demo.config, 'feed_show')
+          endif
+        endif
+      endif
+
+      if !has_key(s:demo.config, 'feed_show')
+        call feedkeys(s:demo.seq[s:demo.seq_i], 't')
+        let s:demo.i = 0
+        let s:demo.seq_i += 1
+        call remove(s:demo.config, 'feed_full')
+      endif
     else
+      if show_keys
+        call haunted#screenkey#show(s:demo.seq[s:demo.seq_i][s:demo.i], show_keys)
+      endif
       let key = s:demo.seq[s:demo.seq_i][s:demo.i]
       call feedkeys(key, 't')
       let s:demo.i += 1
@@ -124,6 +160,8 @@ function! s:parse_config_line(line) abort
     let config[name] = len(delay) == 1 ? delay[0] : delay
   elseif name ==# 'feed_full'
     let config[name] = 1
+  elseif name ==# 'show_keys'
+    let config[name] = empty(args) ? 500 : str2nr(args)
   endif
 
   return config
@@ -183,7 +221,7 @@ function! s:parse_demo_file(filename) abort
         endif
 
         if !empty(key)
-          call add(demo_seq, {'feed_full': 1})
+          call add(demo_seq, {'feed_full': 1, 'sp_key': 1})
           call add(demo_seq, key)
         endif
       endfor
@@ -214,8 +252,8 @@ endfunction
 
 " Run a demo file.
 function! haunted#run(filename) abort
-  let s:demo = copy(s:demo_boilerplate)
-  let s:demo.seq = s:parse_demo_file(a:filename)
+  let s:demo = {'i': 0, 'seq_i': 0, 'config': {},
+        \ 'seq': s:parse_demo_file(a:filename)}
   if empty(s:demo.seq)
     return
   endif
