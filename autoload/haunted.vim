@@ -92,7 +92,7 @@ function! s:demo_tick(...) abort
     return s:demo_tick()
   endif
 
-  let s:timer = timer_start(delay, 's:demo_tick')
+  let s:timer = timer_start(delay, function('s:demo_tick'))
 endfunction
 
 
