@@ -69,7 +69,7 @@ function! s:demo_tick(...) abort
       if show_keys
         if has_key(s:demo.config, 'sp_key')
           call remove(s:demo.config, 'sp_key')
-          call haunted#screenkey#show(s:demo.seq[s:demo.seq_i], show_keys)
+          call haunted#screenkey#show(join(s:demo.seq[s:demo.seq_i]), show_keys)
         else
           " feed_full feeds the whole sequence at once. With show_keys enabled,
           " we're faking key presses before actually calling feedkeys()
@@ -87,7 +87,7 @@ function! s:demo_tick(...) abort
       endif
 
       if !has_key(s:demo.config, 'feed_show')
-        call feedkeys(s:demo.seq[s:demo.seq_i], 't')
+        call feedkeys(join(s:demo.seq[s:demo.seq_i]), 't')
         let s:demo.i = 0
         let s:demo.seq_i += 1
         call remove(s:demo.config, 'feed_full')
@@ -96,8 +96,7 @@ function! s:demo_tick(...) abort
       if show_keys
         call haunted#screenkey#show(s:demo.seq[s:demo.seq_i][s:demo.i], show_keys)
       endif
-      let key = s:demo.seq[s:demo.seq_i][s:demo.i]
-      call feedkeys(key, 't')
+      call feedkeys(s:demo.seq[s:demo.seq_i][s:demo.i], 't')
       let s:demo.i += 1
       if s:demo.i >= len(s:demo.seq[s:demo.seq_i])
         let s:demo.i = 0
@@ -217,12 +216,12 @@ function! s:parse_demo_file(filename) abort
         if !empty(p)
           let p = substitute(p, '\\\\\(.\)', '\=eval(''"\''.submatch(1).''"'')', 'g')
           let p = substitute(p, '\\\(.\)', '\1', 'g')
-          call add(demo_seq, p)
+          call add(demo_seq, split(p, '.\zs'))
         endif
 
         if !empty(key)
           call add(demo_seq, {'feed_full': 1, 'sp_key': 1})
-          call add(demo_seq, key)
+          call add(demo_seq, [key])
         endif
       endfor
     endif
