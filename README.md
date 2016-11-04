@@ -39,7 +39,7 @@ A line that starts with `### ` is a comment.
 | `execute`   | Execute a command                                                                                                       |
 | `key_delay` | Sets the amount of time between keystrokes (in `ms`). Two arguments will cause the delay to be random within the range. |
 | `feed_full` | Feed in the next line as a whole instead of individual keystrokes. Useful for operator keys.                            |
-| `show_keys` | Displays keystrokes on screen.  Boolean argument `1` or `0`.                                                            |
+| `show_keys` | Displays keystrokes on screen.  Argument is the time before clearing the buffer. `0` to disable and hide.               |
 
 Example script: [support/demo/demo.hnt][demo]
 
