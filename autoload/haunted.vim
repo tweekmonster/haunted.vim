@@ -69,7 +69,7 @@ function! s:demo_tick(...) abort
       if show_keys
         if has_key(s:demo.config, 'sp_key')
           call remove(s:demo.config, 'sp_key')
-          call haunted#screenkey#show(join(s:demo.seq[s:demo.seq_i]), show_keys)
+          call haunted#screenkey#show(join(s:demo.seq[s:demo.seq_i], ''), show_keys)
         else
           " feed_full feeds the whole sequence at once. With show_keys enabled,
           " we're faking key presses before actually calling feedkeys()
@@ -87,7 +87,7 @@ function! s:demo_tick(...) abort
       endif
 
       if !has_key(s:demo.config, 'feed_show')
-        call feedkeys(join(s:demo.seq[s:demo.seq_i]), 't')
+        call feedkeys(join(s:demo.seq[s:demo.seq_i], ''), 't')
         let s:demo.i = 0
         let s:demo.seq_i += 1
         call remove(s:demo.config, 'feed_full')
@@ -267,6 +267,8 @@ function! haunted#run(filename) abort
   endif
 
   let seq = s:parse_demo_file(filename)
+  " echomsg 'xxx' string(seq)
+  " return
   if empty(seq)
     return
   endif
