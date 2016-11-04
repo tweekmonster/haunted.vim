@@ -252,11 +252,28 @@ endfunction
 
 " Run a demo file.
 function! haunted#run(filename) abort
-  let s:demo = {'i': 0, 'seq_i': 0, 'config': {},
-        \ 'seq': s:parse_demo_file(a:filename)}
-  if empty(s:demo.seq)
+  let filename = a:filename
+  if empty(filename)
+    let filename = expand('%:p')
+  endif
+
+  let ext = fnamemodify(filename, ':e')
+  if ext != 'hnt'
+    let shortname = fnamemodify(filename, ':t')
+    let resp = input(printf('"%s" does not appear to be a haunt file.'
+          \ ."\nRun anyways? [yN] ", shortname))
+    if empty(resp) || resp[0] !=? 'y'
+      return
+    endif
+  endif
+
+  let seq = s:parse_demo_file(filename)
+  if empty(seq)
     return
   endif
+
+  let s:demo = {'i': 0, 'seq_i': 0, 'config': {},
+        \ 'seq': seq}
 
   call s:reset()
   call s:demo_tick()
